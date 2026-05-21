@@ -1,7 +1,7 @@
 # Technology stack — tools-transcript
 
 **Status:** Foundation pins — update when implementation changes versions  
-**Updated:** 2026-05-20
+**Updated:** 2026-05-20 (M2 CI)
 
 ---
 
@@ -52,16 +52,21 @@ See `.ai/standards/20260520-DIRECTORY_MAP.md`.
 ./bin/start.sh validate
 ./bin/start.sh build
 tests/smoke.sh
-shellcheck bin/start.sh app/entrypoint.sh
+shellcheck -S error bin/start.sh app/entrypoint.sh
 ```
 
 ---
 
 ## 4. CI/CD
 
-| Item | Status |
-|------|--------|
-| Platform | TBD (see UNKNOWNS U3) |
+| Item | Value |
+|------|-------|
+| Platform | **GitHub Actions** — `.github/workflows/ci.yml` |
+| Triggers | `push` and `pull_request` to `main` |
+| Runner | `ubuntu-latest` (Docker + Compose preinstalled) |
+| Steps | `shellcheck -S error` → `validate` → `build` → `tests/smoke.sh` (`tiny` model) |
+| Secrets | None required |
+| Project isolation in CI | `COMPOSE_PROJECT_NAME=tools-transcript-ci`, `STACK_SUFFIX=ci` |
 | Deploy targets | n/a — local tool |
 
 ---
@@ -71,7 +76,6 @@ shellcheck bin/start.sh app/entrypoint.sh
 | ID | Topic | Owner |
 |----|-------|-------|
 | U2 | GPU/CUDA image | eng |
-| U3 | CI platform | eng |
 
 ---
 

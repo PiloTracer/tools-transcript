@@ -2,13 +2,13 @@
 
 ## Session status
 
-**Closed:** 2026-05-20 — M1 bookends committed (HANDOFF/NEXT/plan sync, concept review)
+**Closed:** 2026-05-20 — M2 CI complete; committed GitHub Actions, offline docs, U3 closed
 
 **Updated:** 2026-05-20
 
-**Open:** -
+**Open:** —
 
-**Repository state:** M1 **complete** (`1d052f0` + bookend docs commit). Stack operational; milestone verify **pass with gaps** (shellcheck deferred M2). Master plan **Approved**. Next: **M2 CI** — `@code-implementation plan - M2`. Branch ahead of `origin/main` — run `git push` when auth ready.
+**Repository state:** M1 **complete** (`1d052f0`). M2 **complete** (committed this session). Master plan **Approved**. Next: **M3 operator UX** — `@code-implementation plan - M3`. Push `main` + confirm GHA green to close M2 acceptance gap.
 
 **Plan-master-ready:** 2026-05-20
 
@@ -23,7 +23,7 @@
 1. Run **`@session-control start`**
 2. Read **`.cursorrules`**
 3. Read this file and `.work/plans/NEXT.md`
-4. Run **`@code-implementation plan - M2`** for CI iteration
+4. Run **`@code-implementation plan - M3`**
 
 ---
 
@@ -58,6 +58,9 @@
 | 2026-05-20 | M1 implementation | `WHISPER_CPP_REF=v1.8.4`, MP4 smoke, non-root user, SPEC-amendment-01, README large-MP4, entrypoint fixes |
 | 2026-05-20 | M1 complete | `@code-implementation complete`; concept review `M1-concept-review-20260520.md`; verify PASS |
 | 2026-05-20 | M1 bookends | `@code-repair` plan sync; `@session-control close commit` |
+| 2026-05-20 | M2 implementation | `.github/workflows/ci.yml`, README offline/air-gapped, DOCS_TECH_STACK §4, U3 closed |
+| 2026-05-20 | M2 complete | `@code-verify milestone` pass with gaps; `M2-concept-review-20260520.md` |
+| 2026-05-20 | M2 close commit | `@session-control close commit` — M2 published |
 
 ---
 
@@ -77,7 +80,7 @@
 |----|---------|--------|
 | U1 | whisper.cpp ref pin | **Resolved** — `v1.8.4` |
 | U2 | GPU/CUDA variant | performance roadmap (M4) |
-| U3 | CI platform | automated PR smoke (M2) |
+| U3 | CI platform | **Resolved** — GitHub Actions `.github/workflows/ci.yml` (M2-T3) |
 
 ---
 
@@ -85,4 +88,4 @@
 
 - **Triggered:** no
 - **Result:** n/a
-- **Notes:** MOD-06 done — `.work/plans/M1-concept-review-20260520.md`
+- **Notes:** MOD-06 — `.work/plans/M2-concept-review-20260520.md`

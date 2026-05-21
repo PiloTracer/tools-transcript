@@ -24,7 +24,7 @@ Install and verify these **before** `./bin/start.sh`:
 | **User access to Docker** | Your user in the `docker` group, or root — otherwise menu **1** / **4** will fail. |
 | **Disk space** | ~2 GB free for default model (`medium`) plus space for source media and outputs. |
 | **RAM** | 4 GB minimum recommended; 8 GB+ for `medium` / large files on CPU. |
-| **Network** | Required **once** to build the image and download the Whisper model; transcription itself is offline. |
+| **Network** | Required **once** to build the image and download the Whisper model; transcription itself is offline. See [Offline and air-gapped operation](#offline-and-air-gapped-operation). |
 
 **Optional but useful**
 
@@ -257,6 +257,90 @@ Starting or stopping this stack (menu **2**) does **not** affect other Docker pr
 
 ---
 
+## Offline and air-gapped operation
+
+Transcription of files already in `./sources` does **not** use the network. You only need connectivity for **image build** and **model download** (one-time per machine, or prepared on another host).
+
+### Two phases
+
+| Phase | Needs network? | Commands |
+|-------|----------------|----------|
+| **Prepare** | Yes (or copy artifacts from another machine) | Menu **1** / **6** + **8**, or `./bin/start.sh start` |
+| **Transcribe** | No | Menu **10** or `./bin/start.sh transcribe <file>` |
+
+After prepare, menu **4** should show **READY TO TRANSCRIBE**. From then on, jobs only read `./sources` and write `./outputs` — no cloud upload.
+
+### Ensure model (online prep)
+
+Download the ggml weights into the Docker volume (not into the git repo):
+
+```bash
+# Default model from .env (WHISPER_MODEL, usually medium)
+./bin/start.sh ensure-model
+
+# Specific model
+./bin/start.sh ensure-model --model small
+
+# Fix incomplete download
+./bin/start.sh ensure-model --force
+```
+
+Menu **8** / **9** are the same operations interactively. Models live on volume `tools-transcript-models-<STACK_SUFFIX>` (see `.env` `STACK_SUFFIX`, default `dev`).
+
+### Model volume backup and restore
+
+Use these commands on a machine that **already** has a working model. Replace `dev` with your `STACK_SUFFIX` from `.env`.
+
+**Backup** (creates a tarball on the host):
+
+```bash
+STACK_SUFFIX=dev   # match .env
+VOL="tools-transcript-models-${STACK_SUFFIX}"
+docker run --rm \
+  -v "${VOL}:/data:ro" \
+  -v "$(pwd):/backup" \
+  alpine \
+  tar czf "/backup/whisper-models-${STACK_SUFFIX}.tar.gz" -C /data .
+ls -lh "whisper-models-${STACK_SUFFIX}.tar.gz"
+```
+
+**Restore** on another host (volume must exist or be created by `ensure-model` / menu **1** once):
+
+```bash
+STACK_SUFFIX=dev
+VOL="tools-transcript-models-${STACK_SUFFIX}"
+docker volume create "${VOL}" 2>/dev/null || true
+docker run --rm \
+  -v "${VOL}:/data" \
+  -v "$(pwd):/backup:ro" \
+  alpine \
+  sh -c "rm -rf /data/* && tar xzf /backup/whisper-models-${STACK_SUFFIX}.tar.gz -C /data"
+./bin/start.sh check-model
+```
+
+### Fully air-gapped workflow
+
+On a **connected** machine (same `STACK_SUFFIX` and model name you will use offline):
+
+1. `cp .env.example .env` and set `WHISPER_MODEL` (e.g. `medium`).
+2. `./bin/start.sh build`
+3. `./bin/start.sh ensure-model`
+4. Backup the model volume (above).
+5. Save the Docker image: `docker save tools-transcript:dev -o tools-transcript-dev.tar` (image tag matches `STACK_SUFFIX` in `.env`).
+6. Copy to the air-gapped host: `tools-transcript-dev.tar`, `whisper-models-dev.tar.gz`, this repo (no `./sources` / `./outputs` required).
+
+On the **air-gapped** machine:
+
+1. Install Docker + Compose; copy `.env` with the **same** `STACK_SUFFIX` and `WHISPER_MODEL`.
+2. `docker load -i tools-transcript-dev.tar`
+3. Restore the model volume (above).
+4. `./bin/start.sh check-model` — must report model ok.
+5. Transcribe with menu **10** or `./bin/start.sh transcribe <file>` — no further downloads.
+
+**CI note:** GitHub Actions runs the same prepare path (build + smoke with `tiny`) on every PR; see `.github/workflows/ci.yml`.
+
+---
+
 ## Optional: CLI (without menu)
 
 Same **Linux** host and Docker requirements as the menu. For scripts or automation, every menu action has a command equivalent:
@@ -278,8 +362,10 @@ Same **Linux** host and Docker requirements as the menu. For scripts or automati
 ```bash
 ./bin/start.sh validate
 tests/smoke.sh
-shellcheck bin/start.sh app/entrypoint.sh   # optional
+shellcheck -S error bin/start.sh app/entrypoint.sh   # optional locally; required in CI
 ```
+
+Pull requests run **GitHub Actions** (`.github/workflows/ci.yml`): validate, build, smoke (`tiny`), shellcheck.
 
 ---
 
