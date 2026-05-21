@@ -12,6 +12,9 @@
 | Foundation P0–P6 | docs 01, 04; ADRs; SPEC; Docker stack; README |
 | plan-master-ready | HANDOFF 2026-05-20 |
 | Master plan (Draft) | `.work/plans/full/20260520-full-plan.md` |
+| Dev stack menu + readiness | `bin/start.sh`, `app/entrypoint.sh` |
+| Menu-first README (Linux) | `README.md` |
+| Initial git push | `main` on GitHub |
 
 ---
 

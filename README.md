@@ -1,6 +1,10 @@
 # tools-transcript
 
-Local, offline transcription of video and audio using **whisper.cpp** inside **Docker**. No cloud upload — processing stays on your machine.
+Local, offline transcription of video and audio using **whisper.cpp** in **Docker**. No cloud upload — everything runs on your machine.
+
+**How you run it:** `./bin/start.sh` opens an **interactive menu** — that is the main interface.
+
+**Platform:** `bin/start.sh` is written and tested for **Linux** (e.g. Ubuntu, Pop!_OS, Debian). It is not supported on macOS or Windows natively today; WSL2 on Windows may work if Docker runs inside Linux and you execute the script from that environment.
 
 **Outputs:** `.txt` and `.srt` in `./outputs`  
 **Privacy:** `./sources` and `./outputs` are gitignored; your media never belongs in this repo.
@@ -9,13 +13,38 @@ Local, offline transcription of video and audio using **whisper.cpp** inside **D
 
 ## Prerequisites
 
-- **Docker** (Engine + Compose v2 plugin), daemon running
-- **bash** on the host (Linux or WSL)
-- Enough disk space for the Whisper model (~1.5 GB for `medium`) and your media
+Install and verify these **before** `./bin/start.sh`:
+
+| Requirement | Details |
+|---------------|---------|
+| **OS** | **Linux** (64-bit). Primary target for `bin/start.sh`. |
+| **Docker Engine** | Installed and running (`docker info` succeeds). |
+| **Docker Compose** | Compose **v2** plugin (`docker compose version` — not legacy `docker-compose` only). |
+| **bash** | Version 4+ (`bash --version`). Menu and stack control are POSIX/bash scripts. |
+| **User access to Docker** | Your user in the `docker` group, or root — otherwise menu **1** / **4** will fail. |
+| **Disk space** | ~2 GB free for default model (`medium`) plus space for source media and outputs. |
+| **RAM** | 4 GB minimum recommended; 8 GB+ for `medium` / large files on CPU. |
+| **Network** | Required **once** to build the image and download the Whisper model; transcription itself is offline. |
+
+**Optional but useful**
+
+| Tool | Purpose |
+|------|---------|
+| `git` | Clone this repository |
+| `shellcheck` | Lint `bin/start.sh` / `app/entrypoint.sh` (developers) |
+
+**Quick checks**
+
+```bash
+uname -s          # expect Linux
+docker info       # daemon reachable
+docker compose version
+bash --version
+```
 
 ---
 
-## Quick start (about 3 commands)
+## Setup (once)
 
 ```bash
 cp .env.example .env
@@ -23,123 +52,130 @@ chmod +x bin/start.sh
 ./bin/start.sh
 ```
 
-The **interactive menu** opens by default. Use:
-
-| Menu | Action |
-|------|--------|
-| **1** | First-time setup — validate, build image, download model |
-| **4** | **Status** — confirm everything is ready (Docker, image, model, folders) |
-| **10** | **Transcribe** — type or paste a path to your file |
-
-**Typical first session**
-
-1. Menu **1** (Start) — one-time; downloads the default model into a Docker volume (can take several minutes).
-2. Menu **4** (Status) — wait for **READY TO TRANSCRIBE**.
-3. Menu **10** — paste e.g. `/home/you/Videos/talk.mp4` (copied into `./sources` automatically) or enter a filename already in `./sources`.
-4. Find results in `./outputs/`.
-
-**CLI equivalent (no menu)**
-
-```bash
-./bin/start.sh start
-./bin/start.sh status          # exit 0 = ready
-./bin/start.sh transcribe "/path/to/your video.mp4"
-ls outputs/
-```
-
-Filenames with **spaces** must be quoted.
+The menu opens automatically. No arguments needed.
 
 ---
 
-## Day-to-day use
+## First-time workflow (menu)
 
-You usually **do not** need to run `start` again if the image and model are already on disk.
+| Step | Menu choice | What happens |
+|------|-------------|----------------|
+| 1 | **1** — Start / prepare | Validates Docker, builds the image, downloads the default Whisper model (several minutes first time) |
+| 2 | **4** — Status | Full checklist; wait for **READY TO TRANSCRIBE** |
+| 3 | **10** — Transcribe | Paste a full path or type a filename (see below) |
+| 4 | — | Open `./outputs/` for `.txt` and `.srt` |
 
-```bash
-./bin/start.sh                  # menu — check banner for READY / NOT READY
-./bin/start.sh status           # full checklist + verdict
-./bin/start.sh transcribe "my recording.mp4"
-./bin/start.sh list-sources     # files waiting in ./sources
-```
+### Transcribe (menu **10**)
 
-**Paste a full path** — the CLI copies the file into `./sources` then transcribes:
+When prompted for **Video/audio path or filename**, you can:
 
-```bash
-./bin/start.sh transcribe "/mnt/media/2026-05-20 14-03-30.mp4"
-```
+- Paste a **full path**, e.g. `/home/you/Videos/my talk.mp4` — the tool copies it into `./sources` and runs the job
+- Enter a **filename** already in `./sources`, e.g. `recording.mp4`
+- Press Enter on **Model** to use the default from `.env` (`medium`), or type e.g. `small` for a faster run
 
-**Faster model** (less accurate):
+Filenames with spaces work when you paste the full path.
 
-```bash
-./bin/start.sh transcribe clip.mp4 --model small
-```
+### Readiness banner (every menu screen)
 
-Or set `WHISPER_MODEL=small` in `.env` and run `./bin/start.sh ensure-model`.
+At the top of the menu you will see **── Readiness ──** with checks for Docker, Compose, Image, Model, sources, and outputs:
 
----
+- **▶ READY TO TRANSCRIBE** — safe to use menu **10**
+- **▶ NOT READY** — follow the suggested step (usually menu **1** or **8**)
 
-## Where things live
-
-| Path / resource | Purpose |
-|-----------------|--------|
-| `./sources/` | Input media (you copy or paste paths here) |
-| `./outputs/` | Transcripts: `<basename>.txt`, `<basename>.srt` |
-| Docker volume `tools-transcript-models-<suffix>` | Downloaded `ggml-*.bin` models (survives `stop`) |
-| `.env` | Project isolation + default model (copy from `.env.example`) |
-
-**Note:** `docker compose ps` may show **no running containers** between jobs — that is normal. Each transcription is a one-off `compose run` container; the **model stays on the named volume**, not inside a stopped container.
+Press **`r`** to refresh after a long download or build.
 
 ---
 
-## Interactive menu
+## Day-to-day workflow (menu)
 
 ```bash
-./bin/start.sh        # same as ./bin/start.sh dev
+./bin/start.sh
 ```
 
-| Section | Items |
-|---------|--------|
-| Stack | 1 Start · 2 Stop · 3 Restart · 4 **Status** · 5–9 build / model |
-| Transcribe | 10 Transcribe · 11 List sources · 12 Shell |
-| Verify | 13 Health · 14 Smoke test · 15 Usage |
-| Danger | 17 Nuke volumes (deletes models too) |
+| Goal | Menu |
+|------|------|
+| Check if you can transcribe | **4** Status (or read the readiness banner) |
+| Transcribe a file | **10** |
+| See files in `./sources` | **11** |
+| Re-download / fix model | **8** (or **9** to verify only) |
+| Stop compose project | **2** |
 
-Press **`r`** to refresh readiness; **`?`** for all CLI commands.
+You usually **do not** need menu **1** again if the banner already shows **READY** and the model volume still has your `ggml-*.bin` file.
+
+Results always appear in `./outputs/<basename>.txt` and `.srt`.
 
 ---
 
-## Command reference
+## Full menu reference
 
-| Command | Description |
-|---------|-------------|
-| `./bin/start.sh` | Interactive menu (default) |
-| `./bin/start.sh start` | Validate + build image + ensure default model |
-| `./bin/start.sh status` | Readiness checklist (Docker, image, model, dirs) |
-| `./bin/start.sh transcribe <file>` | Transcribe; `<file>` = basename in `./sources` or full path |
-| `./bin/start.sh check-model` | Verify model on volume (no download) |
-| `./bin/start.sh ensure-model` | Download `WHISPER_MODEL` if missing |
-| `./bin/start.sh ensure-model --force` | Re-download (fix incomplete download) |
-| `./bin/start.sh list-sources` | List files in `./sources` |
-| `./bin/start.sh shell` | Bash inside the transcript container |
-| `./bin/start.sh stop` | `compose down` for this project only (keeps volumes) |
-| `./bin/start.sh validate` | Validate `docker-compose.yml` |
-| `./bin/start.sh help` | Full command list |
+```bash
+./bin/start.sh          # default — opens the menu
+./bin/start.sh dev      # same
+```
+
+**Keys:** `0` exit · `r` refresh readiness · `?` help (CLI command list)
+
+### Stack & resources
+
+| # | Action |
+|---|--------|
+| **1** | Start / prepare — validate + build image + ensure model |
+| **2** | Stop stack (keeps volumes, including models) |
+| **3** | Restart — stop then start |
+| **4** | **Status** — readiness checklist + READY / NOT READY verdict |
+| **5** | Validate compose file |
+| **6** | Build image only |
+| **7** | Pull base images |
+| **8** | Ensure model — download `WHISPER_MODEL` from `.env` |
+| **9** | Check model — verify on volume, no download |
+
+### Transcription
+
+| # | Action |
+|---|--------|
+| **10** | **Transcribe** — paste path or filename; optional model override |
+| **11** | List files in `./sources` |
+| **12** | Shell inside the transcript container |
+
+### Verify & ops
+
+| # | Action |
+|---|--------|
+| **13** | Health check |
+| **14** | Run smoke test (`tests/smoke.sh`) |
+| **15** | Usage / URLs |
+| **16** | Follow service logs |
+
+### Danger zone
+
+| # | Action |
+|---|--------|
+| **17** | Nuke — deletes project volumes including downloaded models (double confirm) |
+
+---
+
+## Where files live
+
+| Location | Purpose |
+|----------|---------|
+| `./sources/` | Input media (menu **11** lists them; menu **10** can copy from elsewhere) |
+| `./outputs/` | Transcripts: `<name>.txt`, `<name>.srt` |
+| Docker volume `tools-transcript-models-<suffix>` | Cached Whisper models (survives menu **2** Stop) |
+| `.env` | Isolation + default model — copy from `.env.example` |
+
+**Note:** Between jobs, `docker compose ps` may show **no running containers** — that is normal. Transcription uses short-lived `compose run` containers; the **model stays on the named volume**, not inside a stopped container.
 
 ---
 
 ## Configuration (`.env`)
 
-```bash
-cp .env.example .env
-```
-
 | Variable | Default | Meaning |
 |----------|---------|---------|
-| `COMPOSE_PROJECT_NAME` | `tools-transcript-dev` | Isolates this stack from other Docker projects |
-| `STACK_SUFFIX` | `dev` | Suffix for image/volume names |
-| `WHISPER_MODEL` | `medium` | `tiny`, `small`, `medium`, `large`, … |
+| `COMPOSE_PROJECT_NAME` | `tools-transcript-dev` | Isolates this stack from other Docker projects on the host |
+| `STACK_SUFFIX` | `dev` | Image and volume name suffix |
+| `WHISPER_MODEL` | `medium` | Default for menu **8** / **10** — `tiny`, `small`, `medium`, `large`, … |
 
-Change `COMPOSE_PROJECT_NAME` if you run multiple clones on one machine.
+Change `COMPOSE_PROJECT_NAME` if you run more than one clone on the same machine.
 
 ---
 
@@ -152,7 +188,22 @@ Change `COMPOSE_PROJECT_NAME` if you run multiple clones on one machine.
 | medium | ~1.5 GB | Slower | Very good (**default**) |
 | large | ~3 GB | Slowest | Best |
 
-First download of `medium` can take several minutes depending on your connection.
+At menu **10**, enter a different model name when prompted, or change `WHISPER_MODEL` in `.env` and run menu **8**.
+
+---
+
+## Troubleshooting (menu-first)
+
+| Symptom | Menu / action |
+|---------|----------------|
+| Banner says **NOT READY**, model missing | **1** Start, or **8** Ensure model |
+| Status (**4**) shows model incomplete | **8**, choose force re-download when prompted |
+| Transcribe (**10**) blocked | Fix readiness first (**4**), then **10** |
+| No output files | Check `./outputs/`; job may still be running in the terminal |
+| Wrong Docker project affected | Unique `COMPOSE_PROJECT_NAME` in `.env` |
+| Start completely over | **17** Nuke (removes models too) |
+
+Press **`r`** on the menu after **1** or **8** finishes to refresh the readiness banner.
 
 ---
 
@@ -161,24 +212,26 @@ First download of `medium` can take several minutes depending on your connection
 | Mechanism | Purpose |
 |-----------|---------|
 | `COMPOSE_PROJECT_NAME` in `.env` | Unique compose project per clone |
-| `bin/start.sh` | Every `docker compose` uses `-p` + `--project-directory` |
+| `bin/start.sh` | All compose commands use `-p` + `--project-directory` |
 | Named volume `tools-transcript-models-<suffix>` | Model cache scoped to this project |
 
-Starting or stopping this stack does **not** affect other Docker projects on the host.
-
-**Ports:** v1 is CLI-only — no host ports published.
+Starting or stopping this stack (menu **2**) does **not** affect other Docker projects on the host. v1 has no published host ports.
 
 ---
 
-## Troubleshooting
+## Optional: CLI (without menu)
 
-| Symptom | What to do |
-|---------|------------|
-| Status says **NOT READY** / model missing | `./bin/start.sh start` or `./bin/start.sh ensure-model` |
-| Status says model **incomplete** | `./bin/start.sh ensure-model --force` |
-| `transcribe` fails after a long run | Re-check model: `./bin/start.sh check-model` |
-| Wrong stack affected | Confirm `.env` `COMPOSE_PROJECT_NAME` is unique |
-| Start over (deletes models) | `./bin/start.sh nuke` — double confirmation |
+Same **Linux** host and Docker requirements as the menu. For scripts or automation, every menu action has a command equivalent:
+
+```bash
+./bin/start.sh start
+./bin/start.sh status
+./bin/start.sh transcribe "/path/to/video.mp4"
+./bin/start.sh list-sources
+./bin/start.sh ensure-model
+./bin/start.sh check-model
+./bin/start.sh help
+```
 
 ---
 

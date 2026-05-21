@@ -2,13 +2,13 @@
 
 ## Session status
 
-**Open:** 2026-05-20 — goal: professional `bin/start.sh` menu with full resource prep (image + model)
+**Closed:** 2026-05-20 — `bin/start.sh` menu, volume-based model readiness, menu-first README (Linux)
 
 **Updated:** 2026-05-20
 
-**Closed:** -
+**Open:** -
 
-**Repository state:** Master implementation plan authored (Draft). Foundation complete. M1 iteration staged in NEXT.md.
+**Repository state:** Initial commit on `main`; stack operational (transcription verified). Master plan Draft — M1 staged in NEXT.md.
 
 **Plan-master-ready:** 2026-05-20
 
@@ -22,9 +22,8 @@
 
 1. Run **`@session-control start`**
 2. Read **`.cursorrules`**
-3. Read `.work/plans/foundation/20260520-01-tools-transcript-initial-scope.md`
-4. Read this file and `.work/plans/NEXT.md`
-5. Review `.work/plans/full/20260520-full-plan.md` → approve or `@plan-master revise`
+3. Read this file and `.work/plans/NEXT.md`
+4. Review `.work/plans/full/20260520-full-plan.md` → approve or `@plan-master revise`
 
 ---
 
@@ -45,7 +44,7 @@
 
 | # | Action | Blocks | Owner |
 |---|--------|--------|-------|
-| - | (none) | | |
+| 1 | Master plan **Approved** | M1 execution | owner |
 
 ---
 
@@ -55,6 +54,7 @@
 |------|---------|-----------|
 | 2026-05-20 | plan-foundation greenfield | foundation 01/04, ADRs, SPEC, Docker stack |
 | 2026-05-20 | plan-master greenfield | `20260520-full-plan.md` (Draft, 4 milestones) |
+| 2026-05-20 | implementation session | `bin/start.sh` interactive menu, readiness/volume model checks, `app/entrypoint.sh` check-model, menu-first README |
 
 ---
 
