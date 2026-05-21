@@ -121,7 +121,7 @@ You do **not** need a separate “extract audio” step. The container runs **ff
 
 ### During the run
 
-- **CPU time** scales with duration of the audio; a multi-hour MP4 can take hours on CPU — this is expected in v1 (no GPU image yet).
+- **CPU time** scales with duration of the audio; a multi-hour MP4 can take hours on CPU — use the optional [GPU image](#gpu-acceleration-nvidia) if you have an NVIDIA GPU.
 - **Network** is not used for your media; only the initial model download (menu **1** / **8**) needs connectivity. See SPEC amendment 01 for setup vs transcribe egress.
 - Watch the terminal for `[transcript] extracting audio:` then `transcribe start:` — extraction failure exits before whisper runs.
 
@@ -141,6 +141,58 @@ Processes every supported audio/video file in `./sources` **one after another**.
 Logs include `size_bytes` at start and `duration_sec` on complete (no transcript text in logs).
 
 **Owner sign-off for large MP4:** [`.work/plans/operations/20260520-m3-large-mp4-checklist.md`](.work/plans/operations/20260520-m3-large-mp4-checklist.md) — run once and record the date in HANDOFF.
+
+---
+
+## GPU acceleration (NVIDIA)
+
+Optional **CUDA** image for faster transcription on hosts with an NVIDIA GPU. The default menu and `./bin/start.sh` commands use the **CPU** image (`profile dev`). GPU uses Compose **`profile gpu`** and service **`transcript-gpu`** (ADR 005).
+
+### Prerequisites
+
+| Requirement | Details |
+|-------------|---------|
+| **NVIDIA driver** | Working `nvidia-smi` on the host |
+| **[NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)** | `docker run --rm --gpus all nvidia/cuda:12.6.3-base-ubuntu22.04 nvidia-smi` succeeds |
+| **Disk / RAM** | Larger image build; same model volume as CPU |
+| **Build time** | First `Dockerfile.cuda` build compiles whisper.cpp with CUDA (several minutes) |
+
+If your GPU generation is not in the default architecture list (`75;86;89`), set before build:
+
+```bash
+export CMAKE_CUDA_ARCHITECTURES=89   # example: Ada; see NVIDIA docs for your card
+```
+
+### One-time GPU setup
+
+Use the same `.env` as CPU (`COMPOSE_PROJECT_NAME`, `STACK_SUFFIX`). From the repo root:
+
+```bash
+# Load project name from .env (same isolation as bin/start.sh)
+COMPOSE_PROJECT_NAME="$(grep -E '^COMPOSE_PROJECT_NAME=' .env | cut -d= -f2-)"
+STACK_SUFFIX="$(grep -E '^STACK_SUFFIX=' .env | cut -d= -f2-)"
+
+docker compose --project-directory . -f docker-compose.yml \
+  -p "${COMPOSE_PROJECT_NAME}" --profile gpu build transcript-gpu
+
+docker compose --project-directory . -f docker-compose.yml \
+  -p "${COMPOSE_PROJECT_NAME}" --profile gpu run --rm transcript-gpu \
+  ensure-model --model medium
+```
+
+### Transcribe with GPU
+
+```bash
+docker compose --project-directory . -f docker-compose.yml \
+  -p "${COMPOSE_PROJECT_NAME}" --profile gpu run --rm transcript-gpu \
+  transcribe myvideo.mp4 --model medium
+```
+
+Outputs are the same as CPU: `./outputs/<basename>.txt` and `.srt`. The shared model volume is unchanged.
+
+### Fallback to CPU
+
+Use the normal workflow (`./bin/start.sh` / menu, profile **dev**). No GPU profile required. CI and smoke tests remain CPU-only.
 
 ### If transcribe fails with “not writable”
 

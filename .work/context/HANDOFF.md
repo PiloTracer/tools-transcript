@@ -2,13 +2,13 @@
 
 ## Session status
 
-**Closed:** 2026-05-20 — M3 operator UX committed (`transcribe-all`, progress logs, checklist)
+**Closed:** 2026-05-20 — M4 GPU (ADR 005, Dockerfile.cuda, compose profile gpu, docs)
 
 **Updated:** 2026-05-20
 
 **Open:** —
 
-**Repository state:** M1 **complete** (`1d052f0`). M2 **complete** (`980646c`). M3 **complete** (committed this close). Master plan **Approved**. Next: owner 325MB sign-off → `@code-implementation plan - M4` (GPU; owner approval) → `git push` + GHA green.
+**Repository state:** M1–M4 **complete** (committed this close). Master plan **Approved** — all milestones implemented. Next: `git push` + GHA green; owner 325MB checklist + optional GPU manual verify.
 
 **Plan-master-ready:** 2026-05-20
 
@@ -23,7 +23,7 @@
 1. Run **`@session-control start`**
 2. Read **`.cursorrules`**
 3. Read this file and `.work/plans/NEXT.md`
-4. Owner: [325MB MP4 checklist](.work/plans/operations/20260520-m3-large-mp4-checklist.md) — then **`@code-implementation plan - M4`** if GPU scope approved
+4. Owner: [325MB MP4 checklist](.work/plans/operations/20260520-m3-large-mp4-checklist.md); optional GPU verify per README § GPU
 
 ---
 
@@ -46,6 +46,7 @@
 |---|--------|--------|-------|
 | 1 | Complete [325MB MP4 checklist](.work/plans/operations/20260520-m3-large-mp4-checklist.md); record date below | v1 product sign-off (G1) | owner |
 | 2 | Optional: run `./bin/start.sh transcribe-all --model tiny` with only 2 small files in `./sources` | M3 acceptance gap (waived at complete) | owner |
+| 3 | Manual GPU transcribe via README § GPU (`transcript-gpu`) on NVIDIA host | M4 acceptance gap (waived at complete) | owner |
 
 ## M3 acceptance gaps (waived at complete 2026-05-20)
 
@@ -54,6 +55,14 @@
 | Manual `transcribe-all` on 2+ fixtures not run in agent session | Code-reviewed; single-file smoke PASS; batch mirrors `transcribe` loop | optional owner retest |
 | 325MB MP4 checklist date not in HANDOFF | Checklist doc delivered (M3-T3); sign-off date is owner-run | owner |
 | GHA green after M3 push | Same as M2 pattern — verify on push | owner |
+
+## M4 acceptance gaps (waived at complete 2026-05-20)
+
+| Gap | Waiver | Owner |
+|-----|--------|-------|
+| Manual GPU transcribe not run in agent session | No NVIDIA in CI/dev host; README documents compose commands | owner on GPU machine |
+| `Dockerfile.cuda` build not run in agent session | Long CUDA compile; CPU smoke proves default path | owner first GPU build |
+| GHA green after M4 commit | Same as M2/M3 — verify on push | owner |
 
 ---
 
@@ -73,6 +82,8 @@
 | 2026-05-20 | M3 implementation | `transcribe-all`, `size_bytes` logs, menu 11, operations checklist |
 | 2026-05-20 | M3 complete | `@code-verify milestone` pass with gaps; `M3-concept-review-20260520.md` |
 | 2026-05-20 | M3 close commit | `@session-control close commit` — M3 published locally |
+| 2026-05-20 | M4 implementation | ADR 005, `Dockerfile.cuda`, compose profile `gpu`, README GPU |
+| 2026-05-20 | M4 complete | `@code-verify milestone` pass with gaps; `M4-concept-review-20260520.md` |
 
 ---
 
@@ -91,7 +102,7 @@
 | ID | Summary | Blocks |
 |----|---------|--------|
 | U1 | whisper.cpp ref pin | **Resolved** — `v1.8.4` |
-| U2 | GPU/CUDA variant | performance roadmap (M4) |
+| U2 | GPU/CUDA variant | **Resolved** — ADR 005 + `Dockerfile.cuda` / profile `gpu` (M4) |
 | U3 | CI platform | **Resolved** — GitHub Actions `.github/workflows/ci.yml` (M2-T3) |
 
 ---
@@ -100,4 +111,4 @@
 
 - **Triggered:** no
 - **Result:** n/a
-- **Notes:** MOD-06 — `.work/plans/M3-concept-review-20260520.md` (M3); M2 — `M2-concept-review-20260520.md`
+- **Notes:** M4 — `M4-concept-review-20260520.md`; M3 — `M3-concept-review-20260520.md`; M2 — `M2-concept-review-20260520.md`

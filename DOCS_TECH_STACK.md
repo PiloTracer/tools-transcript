@@ -1,7 +1,7 @@
 # Technology stack — tools-transcript
 
 **Status:** Foundation pins — update when implementation changes versions  
-**Updated:** 2026-05-20 (M2 CI)
+**Updated:** 2026-05-20 (M4 GPU)
 
 ---
 
@@ -12,6 +12,7 @@
 | Transcription | whisper.cpp (ggml) | **v1.8.4** (`WHISPER_CPP_REF` Dockerfile ARG) | ADR 001 · M1-T1 |
 | Media | ffmpeg | Ubuntu 22.04 package | Video → audio extract |
 | Container OS | Ubuntu | 22.04 | Dockerfile `FROM` |
+| GPU image (optional) | whisper.cpp + CUDA | **v1.8.4** in `Dockerfile.cuda` | ADR 005 · profile `gpu` |
 | Orchestration | Docker Compose | v2 plugin | ADR 002 |
 | Host CLI | POSIX bash | 5.x | `bin/start.sh` |
 | Frontend | n/a | — | CLI only |
@@ -25,7 +26,8 @@
 | Path | Purpose |
 |------|---------|
 | `app/` | Container entrypoint scripts |
-| `bin/start.sh` | Isolated stack manager |
+| `bin/start.sh` | Isolated stack manager (CPU / profile `dev`) |
+| `Dockerfile.cuda` | Optional NVIDIA CUDA build (`-DGGML_CUDA=1`) |
 | `tests/` | Smoke tests |
 | `sources/` | User media (gitignored) |
 | `outputs/` | Artifacts (gitignored) |
@@ -57,7 +59,21 @@ shellcheck -S error bin/start.sh app/entrypoint.sh
 
 ---
 
-## 4. CI/CD
+## 4. GPU (optional)
+
+| Item | Value |
+|------|-------|
+| ADR | `20260520-005-gpu-strategy.md` |
+| Compose profile | `gpu` |
+| Service | `transcript-gpu` |
+| Build | `Dockerfile.cuda` (`nvidia/cuda:12.6.3-devel-ubuntu22.04`, `GGML_CUDA=1`) |
+| Host | NVIDIA driver + Container Toolkit |
+| CI | **CPU only** — no GPU build in GHA |
+| Operator docs | `README.md` § GPU acceleration |
+
+---
+
+## 5. CI/CD
 
 | Item | Value |
 |------|-------|
@@ -71,15 +87,15 @@ shellcheck -S error bin/start.sh app/entrypoint.sh
 
 ---
 
-## 5. Open decisions (track in `.work/plans/UNKNOWNS.md`)
+## 6. Open decisions (track in `.work/plans/UNKNOWNS.md`)
 
 | ID | Topic | Owner |
 |----|-------|-------|
-| U2 | GPU/CUDA image | eng |
+| U2 | GPU/CUDA image | **Resolved** — ADR 005 + `Dockerfile.cuda` / profile `gpu` |
 
 ---
 
-## 6. ADR cross-reference
+## 7. ADR cross-reference
 
 | ADR | Topic |
 |-----|-------|
@@ -87,3 +103,4 @@ shellcheck -S error bin/start.sh app/entrypoint.sh
 | 20260520-002 | Docker Compose |
 | 20260520-003 | Single-user |
 | 20260520-004 | Default model medium |
+| 20260520-005 | GPU (whisper.cpp CUDA) |

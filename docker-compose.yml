@@ -1,10 +1,24 @@
 # tools-transcript — isolated local dev stack
 # Isolation: always use COMPOSE_PROJECT_NAME + repo-root project-directory.
+# CPU (default): profile dev → service transcript + Dockerfile
+# GPU (optional): profile gpu → service transcript-gpu + Dockerfile.cuda (ADR 005)
 
 name: tools-transcript
 
+x-transcript-common: &transcript-common
+  environment:
+    WHISPER_MODEL: ${WHISPER_MODEL:-medium}
+  volumes:
+    - ./sources:/sources:ro
+    - ./outputs:/outputs
+    - whisper-models:/opt/whisper.cpp/models
+  init: true
+  stdin_open: true
+  tty: true
+
 services:
   transcript:
+    <<: *transcript-common
     build:
       context: .
       dockerfile: Dockerfile
@@ -12,19 +26,29 @@ services:
     container_name: transcript-${STACK_SUFFIX:-dev}
     profiles:
       - dev
-    environment:
-      WHISPER_MODEL: ${WHISPER_MODEL:-medium}
-    volumes:
-      - ./sources:/sources:ro
-      - ./outputs:/outputs
-      - whisper-models:/opt/whisper.cpp/models
     # v1: CLI via `compose run` — no published ports.
     # Future HTTP: uncomment and set TRANSCRIPT_HOST_PORT=0 for ephemeral host port.
     # ports:
     #   - "${TRANSCRIPT_HOST_PORT:-}:8080"
-    init: true
-    stdin_open: true
-    tty: true
+
+  transcript-gpu:
+    <<: *transcript-common
+    build:
+      context: .
+      dockerfile: Dockerfile.cuda
+      args:
+        CMAKE_CUDA_ARCHITECTURES: ${CMAKE_CUDA_ARCHITECTURES:-75;86;89}
+    image: tools-transcript-gpu:${STACK_SUFFIX:-dev}
+    container_name: transcript-gpu-${STACK_SUFFIX:-dev}
+    profiles:
+      - gpu
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
 volumes:
   whisper-models:
