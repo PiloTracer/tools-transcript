@@ -2,13 +2,13 @@
 
 ## Session status
 
-**Closed:** 2026-05-20 — M1 v1 hardening implemented (pin whisper, MP4 smoke, non-root, SPEC amendment, docs)
+**Closed:** 2026-05-20 — M1 bookends committed (HANDOFF/NEXT/plan sync, concept review)
 
 **Updated:** 2026-05-20
 
 **Open:** -
 
-**Repository state:** M1 code and docs committed on `main` (ahead of origin). Stack operational; `tests/smoke.sh` PASS (audio + video, uid 1000). Master plan **Approved**. M1 iteration tasks complete — formal milestone close pending `@code-implementation complete` + `@code-verify milestone` + MOD-06.
+**Repository state:** M1 **complete** (`1d052f0` + bookend docs commit). Stack operational; milestone verify **pass with gaps** (shellcheck deferred M2). Master plan **Approved**. Next: **M2 CI** — `@code-implementation plan - M2`. Branch ahead of `origin/main` — run `git push` when auth ready.
 
 **Plan-master-ready:** 2026-05-20
 
@@ -23,7 +23,7 @@
 1. Run **`@session-control start`**
 2. Read **`.cursorrules`**
 3. Read this file and `.work/plans/NEXT.md`
-4. Run **`@code-implementation complete`** then **`@code-verify milestone`** for M1 sign-off
+4. Run **`@code-implementation plan - M2`** for CI iteration
 
 ---
 
@@ -56,6 +56,8 @@
 | 2026-05-20 | plan-master greenfield | `20260520-full-plan.md` (Approved, 4 milestones) |
 | 2026-05-20 | implementation session | `bin/start.sh` interactive menu, readiness/volume model checks, menu-first README |
 | 2026-05-20 | M1 implementation | `WHISPER_CPP_REF=v1.8.4`, MP4 smoke, non-root user, SPEC-amendment-01, README large-MP4, entrypoint fixes |
+| 2026-05-20 | M1 complete | `@code-implementation complete`; concept review `M1-concept-review-20260520.md`; verify PASS |
+| 2026-05-20 | M1 bookends | `@code-repair` plan sync; `@session-control close commit` |
 
 ---
 
@@ -83,4 +85,4 @@
 
 - **Triggered:** no
 - **Result:** n/a
-- **Notes:** MOD-06 pending before M1 **complete**
+- **Notes:** MOD-06 done — `.work/plans/M1-concept-review-20260520.md`
