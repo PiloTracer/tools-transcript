@@ -279,8 +279,27 @@ Or remove `./outputs/.tmp` with sufficient permissions, then retry menu **10**.
 | `COMPOSE_PROJECT_NAME` | `tools-transcript-dev` | Isolates this stack from other Docker projects on the host |
 | `STACK_SUFFIX` | `dev` | Image and volume name suffix |
 | `WHISPER_MODEL` | `medium` | Default for menu **8** / **10** — `tiny`, `small`, `medium`, `large`, … |
+| `WHISPER_LANGUAGE` | *(unset)* | Optional default language for transcription (ISO code, case-insensitive) |
 
 Change `COMPOSE_PROJECT_NAME` if you run more than one clone on the same machine.
+
+### Language (optional)
+
+Whisper uses **English** by default when no language is set. To force a spoken language, pass **`--language`** (ISO code, case-insensitive) or set **`WHISPER_LANGUAGE`** in `.env`:
+
+```bash
+./bin/start.sh transcribe "2026-05-20 14-03-30.mp4" --language es
+./bin/start.sh transcribe mytalk.mp4 --language EN
+./bin/start.sh transcribe-all --language spanish
+```
+
+| Example | Meaning |
+|---------|---------|
+| `en`, `EN`, `english` | English |
+| `es`, `ES`, `spanish` | Spanish |
+| `auto` | Let whisper detect the language |
+
+Menu **10** prompts for an optional language after the model. Omit both flags to keep whisper’s default.
 
 ---
 
@@ -416,7 +435,9 @@ Same **Linux** host and Docker requirements as the menu. For scripts or automati
 ./bin/start.sh start
 ./bin/start.sh status
 ./bin/start.sh transcribe "/path/to/video.mp4"
+./bin/start.sh transcribe "/path/to/video.mp4" --language es
 ./bin/start.sh transcribe-all
+./bin/start.sh transcribe-all --language en
 ./bin/start.sh list-sources
 ./bin/start.sh ensure-model
 ./bin/start.sh check-model

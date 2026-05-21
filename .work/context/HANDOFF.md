@@ -2,13 +2,13 @@
 
 ## Session status
 
-**Closed:** 2026-05-20 — full scan PASS; README menu sync; plan/ADR doc alignment; close commit
+**Closed:** 2026-05-20 — optional `--language` (ISO) for transcribe / transcribe-all; menu 10 prompt; SPEC amendment 02
 
 **Updated:** 2026-05-20
 
 **Open:** —
 
-**Repository state:** M1–M4 **complete**. All milestones implemented; master plan **Approved**. Local `main` ahead of `origin/main` (M4 GPU + doc sync commits). Verification: `validate` + `tests/smoke.sh` exit 0 (2026-05-20). Next: `git push` + GHA green; owner 325MB checklist + optional GPU manual verify.
+**Repository state:** M1–M4 **complete**; master plan **Approved**. Optional language flag shipped (entrypoint `-l`, `WHISPER_LANGUAGE` in `.env`). Rebuild image after pull (`./bin/start.sh build` or menu **1**). Next: `git push` if not published; owner 325MB checklist + optional GPU verify.
 
 **Plan-master-ready:** 2026-05-20
 
@@ -86,6 +86,7 @@
 | 2026-05-20 | M4 complete | `@code-verify milestone` pass with gaps; `M4-concept-review-20260520.md` |
 | 2026-05-20 | Full scan session | validate+smoke PASS; README menu numbers fixed; NEXT/full-plan/foundation/ADR 005 doc sync |
 | 2026-05-20 | Session close commit | `@session-control close commit` — README + plan docs published locally |
+| 2026-05-20 | Language option | `--language` / `WHISPER_LANGUAGE`; SPEC-amendment-02; `@session-control close commit` |
 
 ---
 

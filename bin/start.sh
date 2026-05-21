@@ -69,6 +69,7 @@ load_env() {
   PUBLIC_HOST="$(read_dotenv_value PUBLIC_HOST || true)"
   TRANSCRIPT_HOST_PORT="$(read_dotenv_value TRANSCRIPT_HOST_PORT || true)"
   WHISPER_MODEL="$(read_dotenv_value WHISPER_MODEL || true)"
+  WHISPER_LANGUAGE="$(read_dotenv_value WHISPER_LANGUAGE || true)"
   COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-$DEFAULT_PROJECT}"
   STACK_SUFFIX="${STACK_SUFFIX:-dev}"
   PUBLIC_HOST="${PUBLIC_HOST:-localhost}"
@@ -77,6 +78,36 @@ load_env() {
 
 default_model() {
   printf '%s' "$WHISPER_MODEL"
+}
+
+default_language_hint() {
+  if [[ -n "${WHISPER_LANGUAGE:-}" ]]; then
+    printf '%s' "$WHISPER_LANGUAGE"
+  else
+    printf '%s' 'whisper default (en)'
+  fi
+}
+
+transcript_run_env_flags() {
+  local -a flags=()
+  if [[ -n "${WHISPER_LANGUAGE:-}" ]]; then
+    flags+=(-e "WHISPER_LANGUAGE=${WHISPER_LANGUAGE}")
+  fi
+  if [[ ${#flags[@]} -gt 0 ]]; then
+    printf '%s\n' "${flags[@]}"
+  fi
+}
+
+run_transcript() {
+  local -a env_flags=()
+  while IFS= read -r line; do
+    [[ -n "$line" ]] && env_flags+=("$line")
+  done < <(transcript_run_env_flags)
+  if [[ ${#env_flags[@]} -gt 0 ]]; then
+    dc run --rm "${env_flags[@]}" transcript "$@"
+  else
+    dc run --rm transcript "$@"
+  fi
 }
 
 require_compose_file() {
@@ -403,7 +434,7 @@ normalize_transcribe_input() {
 urls_hint() {
   printf '\n%sUsage%s\n' "$C_SEC" "$C_RESET"
   printf '  Drop media in ./sources (gitignored)\n'
-  printf '  Transcribe:  %s transcribe <file> [--model NAME]\n' "$0"
+  printf '  Transcribe:  %s transcribe <file> [--model NAME] [--language CODE]\n' "$0"
   printf '  Quote spaces: %s transcribe "my video.mp4"\n' "$0"
   if [[ -n "${TRANSCRIPT_HOST_PORT:-}" ]]; then
     printf '\nOptional HTTP (if enabled in compose): http://%s:%s\n' "$PUBLIC_HOST" "$TRANSCRIPT_HOST_PORT"
@@ -553,8 +584,9 @@ cmd_shell() {
 
 cmd_transcribe() {
   if [[ $# -lt 1 ]]; then
-    printf 'Usage: %s transcribe <file> [--model NAME]\n' "$0" >&2
+    printf 'Usage: %s transcribe <file> [--model NAME] [--language CODE]\n' "$0" >&2
     printf '  <file> = basename in ./sources, or a full path (copied into ./sources)\n' >&2
+    printf '  --language = ISO code (case-insensitive), e.g. en, es, auto\n' >&2
     printf 'Quote paths with spaces: %s transcribe "/path/my video.mp4"\n' "$0" >&2
     exit 1
   fi
@@ -571,6 +603,13 @@ cmd_transcribe() {
       model_args=(--model "${args[i + 1]}")
       transcribe_args+=("--model" "${args[i + 1]}")
       i=$((i + 2))
+    elif [[ "${args[i]}" == --language ]]; then
+      if [[ $((i + 1)) -ge ${#args[@]} ]]; then
+        printf 'missing value for --language\n' >&2
+        exit 1
+      fi
+      transcribe_args+=("--language" "${args[i + 1]}")
+      i=$((i + 2))
     else
       if [[ -z "$resolved" ]]; then
         resolved="$(normalize_transcribe_input "${args[i]}")" || exit 1
@@ -586,12 +625,12 @@ cmd_transcribe() {
   else
     cmd_ensure_model
   fi
-  dc run --rm transcript transcribe "${transcribe_args[@]}"
+  run_transcript transcribe "${transcribe_args[@]}"
 }
 
 cmd_transcribe_all() {
   local -a args=("$@")
-  local model_args=() i=0
+  local model_args=() transcribe_args=() i=0
   require_docker
   ensure_workspace_dirs
   while [[ $i -lt ${#args[@]} ]]; do
@@ -601,9 +640,18 @@ cmd_transcribe_all() {
         exit 1
       fi
       model_args=(--model "${args[i + 1]}")
+      transcribe_args+=("--model" "${args[i + 1]}")
+      i=$((i + 2))
+    elif [[ "${args[i]}" == --language ]]; then
+      if [[ $((i + 1)) -ge ${#args[@]} ]]; then
+        printf 'missing value for --language\n' >&2
+        exit 1
+      fi
+      transcribe_args+=("--language" "${args[i + 1]}")
       i=$((i + 2))
     else
-      printf 'unknown argument: %s (usage: %s transcribe-all [--model NAME])\n' "${args[i]}" "$0" >&2
+      printf 'unknown argument: %s (usage: %s transcribe-all [--model NAME] [--language CODE])\n' \
+        "${args[i]}" "$0" >&2
       exit 1
     fi
   done
@@ -612,7 +660,7 @@ cmd_transcribe_all() {
   else
     cmd_ensure_model
   fi
-  dc run --rm transcript transcribe-all "${model_args[@]}"
+  run_transcript transcribe-all "${transcribe_args[@]}"
 }
 
 cmd_list_sources() {
@@ -694,6 +742,7 @@ Stack & resources (start = validate + build + ensure-model):
 Transcription:
   transcribe <file>    Run job (auto-ensures model first)
   transcribe-all       Transcribe every media file in ./sources (sequential)
+  --language CODE      Optional on transcribe / transcribe-all (ISO, e.g. en, es, auto)
   ensure-model         Download WHISPER_MODEL if missing
   ensure-model --force Re-download model (fix incomplete download)
   check-model          Verify model on volume (no download)
@@ -759,7 +808,7 @@ EOF
 }
 
 menu_transcribe_prompt() {
-  local f model resolved ans
+  local f model language resolved ans
   assess_readiness
   if [[ "$RDY_OK" -ne 1 ]]; then
     printf '\n%sCannot transcribe yet — readiness check failed.%s\n' "$C_ERR" "$C_RESET" >&2
@@ -780,11 +829,11 @@ menu_transcribe_prompt() {
   set -e
   [[ "$nrc" -eq 0 ]] || return "$nrc"
   menu_read "Model [$(default_model)]: " model || return 0
-  if [[ -z "$model" ]]; then
-    cmd_transcribe "$resolved"
-  else
-    cmd_transcribe "$resolved" --model "$model"
-  fi
+  menu_read "Language [$(default_language_hint)] (empty=default): " language || return 0
+  local -a targs=("$resolved")
+  [[ -n "$model" ]] && targs+=(--model "$model")
+  [[ -n "$language" ]] && targs+=(--language "$language")
+  cmd_transcribe "${targs[@]}"
 }
 
 menu_ensure_model_prompt() {

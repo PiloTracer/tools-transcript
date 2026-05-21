@@ -40,8 +40,8 @@ log() {
 usage() {
   cat >&2 <<'EOF'
 Usage:
-  entrypoint.sh transcribe <file-in-sources> [--model NAME]
-  entrypoint.sh transcribe-all [--model NAME]
+  entrypoint.sh transcribe <file-in-sources> [--model NAME] [--language CODE]
+  entrypoint.sh transcribe-all [--model NAME] [--language CODE]
   entrypoint.sh ensure-model [--model NAME] [--force]
   entrypoint.sh check-model [--model NAME]
   entrypoint.sh shell
@@ -51,9 +51,12 @@ Notes:
   Path is relative to ./sources (do not include a sources/ prefix).
   Quote filenames that contain spaces:
     transcribe "2026-05-20 14-03-30.mp4"
+  --language: ISO code (case-insensitive), e.g. en, EN, es, ES; aliases english, spanish.
+  Use "auto" for whisper auto-detect. Omit for whisper default (English).
 
 Environment:
-  WHISPER_MODEL   Default model name (default: medium)
+  WHISPER_MODEL      Default model name (default: medium)
+  WHISPER_LANGUAGE   Default language code when --language omitted (optional)
 EOF
   exit 1
 }
@@ -97,6 +100,30 @@ model_name() {
   else
     printf '%s' "${WHISPER_MODEL:-medium}"
   fi
+}
+
+normalize_language_code() {
+  local raw="$1"
+  raw="$(printf '%s' "$raw" | tr '[:upper:]' '[:lower:]')"
+  case "$raw" in
+    english|eng) raw=en ;;
+    spanish|spa) raw=es ;;
+  esac
+  printf '%s' "$raw"
+}
+
+language_code() {
+  local override="${1:-}"
+  local raw=""
+  if [[ -n "$override" ]]; then
+    raw="$override"
+  elif [[ -n "${WHISPER_LANGUAGE:-}" ]]; then
+    raw="${WHISPER_LANGUAGE}"
+  else
+    printf '%s' ""
+    return 0
+  fi
+  normalize_language_code "$raw"
 }
 
 model_path() {
@@ -274,7 +301,9 @@ prepare_audio() {
 do_transcribe_file() {
   local rel="$1"
   local model_override="${2:-}"
-  local source audio model_path_out base size_bytes
+  local language_override="${3:-}"
+  local source audio model_path_out base size_bytes lang
+  local -a whisper_args=()
   local start_ts end_ts duration
 
   rel="$(normalize_source_rel "$rel")"
@@ -285,17 +314,28 @@ do_transcribe_file() {
   ensure_model "$model_override"
   model_path_out="$(model_path "$model_override")"
   audio="$(prepare_audio "$source")"
+  lang="$(language_code "$language_override")"
 
   ensure_outputs_dirs
   size_bytes="$(source_file_size "$source")"
-  log "transcribe start: ${base} model=$(model_name "$model_override") size_bytes=${size_bytes}"
+  if [[ -n "$lang" ]]; then
+    log "transcribe start: ${base} model=$(model_name "$model_override") language=${lang} size_bytes=${size_bytes}"
+  else
+    log "transcribe start: ${base} model=$(model_name "$model_override") size_bytes=${size_bytes}"
+  fi
+
+  whisper_args=(
+    -m "$model_path_out"
+    -f "$audio"
+    -of "${OUTPUTS_DIR}/${base}"
+    -otxt -osrt
+  )
+  if [[ -n "$lang" ]]; then
+    whisper_args+=(-l "$lang")
+  fi
 
   start_ts=$(date +%s)
-  if ! "$WHISPER_BIN" \
-      -m "$model_path_out" \
-      -f "$audio" \
-      -of "${OUTPUTS_DIR}/${base}" \
-      -otxt -osrt; then
+  if ! "$WHISPER_BIN" "${whisper_args[@]}"; then
     printf 'transcription failed: %s\n' "$(basename "$rel")" >&2
     if ! model_is_valid "$(model_name "$model_override")"; then
       printf 'hint: model file may be corrupt — run: %s ensure-model --force\n' \
@@ -310,17 +350,24 @@ do_transcribe_file() {
   return 0
 }
 
-parse_transcribe_model_arg() {
-  local -n _override="$1"
-  shift
-  _override=""
+parse_transcribe_options() {
+  local -n _model="$1"
+  local -n _language="$2"
+  shift 2
+  _model=""
+  _language=""
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --model)
         shift
-        _override="${1:-}"
-        [[ -n "$_override" ]] || usage
+        _model="${1:-}"
+        [[ -n "$_model" ]] || usage
+        ;;
+      --language)
+        shift
+        _language="${1:-}"
+        [[ -n "$_language" ]] || usage
         ;;
       *)
         printf 'unknown option: %s\n' "$1" >&2
@@ -334,7 +381,7 @@ parse_transcribe_model_arg() {
 cmd_transcribe() {
   local rel="${1:-}"
   shift || true
-  local model_override=""
+  local model_override="" language_override=""
 
   if [[ -z "$rel" ]]; then
     usage
@@ -346,6 +393,11 @@ cmd_transcribe() {
         shift
         model_override="${1:-}"
         [[ -n "$model_override" ]] || usage
+        ;;
+      --language)
+        shift
+        language_override="${1:-}"
+        [[ -n "$language_override" ]] || usage
         ;;
       *)
         printf 'unknown option: %s\n' "$1" >&2
@@ -359,7 +411,7 @@ cmd_transcribe() {
     shift || true
   done
 
-  do_transcribe_file "$rel" "$model_override"
+  do_transcribe_file "$rel" "$model_override" "$language_override"
 }
 
 collect_source_media_files() {
@@ -388,8 +440,8 @@ collect_source_media_files() {
 }
 
 cmd_transcribe_all() {
-  local model_override=""
-  parse_transcribe_model_arg model_override "$@"
+  local model_override="" language_override="" lang
+  parse_transcribe_options model_override language_override "$@"
 
   local -a queue=()
   collect_source_media_files queue
@@ -400,11 +452,16 @@ cmd_transcribe_all() {
   fi
 
   ensure_model "$model_override"
+  lang="$(language_code "$language_override")"
 
   local failed=0 rel
-  log "transcribe-all start: count=${#queue[@]} model=$(model_name "$model_override")"
+  if [[ -n "$lang" ]]; then
+    log "transcribe-all start: count=${#queue[@]} model=$(model_name "$model_override") language=${lang}"
+  else
+    log "transcribe-all start: count=${#queue[@]} model=$(model_name "$model_override")"
+  fi
   for rel in "${queue[@]}"; do
-    if ! do_transcribe_file "$rel" "$model_override"; then
+    if ! do_transcribe_file "$rel" "$model_override" "$language_override"; then
       failed=1
     fi
   done
