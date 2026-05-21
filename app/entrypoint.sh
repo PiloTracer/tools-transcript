@@ -10,6 +10,29 @@ SOURCES_DIR="/sources"
 OUTPUTS_DIR="/outputs"
 TMP_DIR="${OUTPUTS_DIR}/.tmp"
 
+require_writable_dir() {
+  local dir="$1" label="$2"
+  if ! mkdir -p "$dir" 2>/dev/null || [[ ! -w "$dir" ]]; then
+    printf '%s not writable (uid=%s gid=%s): %s\n' \
+      "$label" "$(id -u)" "$(id -g)" "$dir" >&2
+    if [[ "$dir" == "$MODELS_DIR" ]]; then
+      printf 'hint: model volume may be root-owned — run once: docker compose run --rm --user root --entrypoint chown transcript -R /opt/whisper.cpp/models\n' >&2
+    else
+      printf 'hint: on host run: sudo chown -R %s:%s outputs\n' "$(id -u)" "$(id -g)" >&2
+    fi
+    exit 2
+  fi
+}
+
+ensure_outputs_dirs() {
+  require_writable_dir "$OUTPUTS_DIR" "outputs directory"
+  require_writable_dir "$TMP_DIR" "outputs temp directory"
+}
+
+ensure_models_dir_writable() {
+  require_writable_dir "$MODELS_DIR" "models directory"
+}
+
 log() {
   printf '[transcript] %s\n' "$*" >&2
 }
@@ -110,6 +133,7 @@ model_is_valid() {
 
 download_model() {
   local name="$1"
+  ensure_models_dir_writable
   log "downloading model: ${name}"
   if [[ ! -x "${WHISPER_ROOT}/models/download-ggml-model.sh" ]]; then
     printf 'model download script missing\n' >&2
@@ -122,6 +146,10 @@ ensure_model() {
   local name path force="${2:-0}"
   name="$(model_name "${1:-}")"
   path="$(model_path "$name")"
+
+  if [[ ! -f "$path" ]] || [[ "$force" -eq 1 ]]; then
+    ensure_models_dir_writable
+  fi
 
   if [[ -f "$path" ]] && model_is_valid "$name" && [[ "$force" -eq 0 ]]; then
     log "model ready: ${name}"
@@ -150,6 +178,7 @@ ensure_model() {
 parse_model_args() {
   local -n _override="$1"
   local -n _force="$2"
+  shift 2
   _override=""
   _force=0
 
@@ -214,7 +243,7 @@ prepare_audio() {
   base="$(basename "$source")"
   base="${base%.*}"
 
-  mkdir -p "$TMP_DIR"
+  ensure_outputs_dirs
   local wav="${TMP_DIR}/${base}.wav"
 
   if is_video "$source"; then
@@ -268,7 +297,7 @@ cmd_transcribe() {
   model_path_out="$(model_path "$model_override")"
   audio="$(prepare_audio "$source")"
 
-  mkdir -p "$OUTPUTS_DIR"
+  ensure_outputs_dirs
   log "transcribe start: ${base} model=$(model_name "$model_override")"
 
   start_ts=$(date +%s)

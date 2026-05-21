@@ -106,6 +106,44 @@ Results always appear in `./outputs/<basename>.txt` and `.srt`.
 
 ---
 
+## Large video files (e.g. 300MB+ MP4)
+
+You do **not** need a separate “extract audio” step. The container runs **ffmpeg** automatically for video formats (MP4, MKV, WebM, …), writes a temporary mono 16 kHz WAV under `./outputs/.tmp/`, then runs whisper. That temp file is removed when the job finishes.
+
+### Before you start a long run
+
+| Check | Why |
+|-------|-----|
+| Menu **4** shows **READY TO TRANSCRIBE** | Image built and model on the Docker volume |
+| Enough **disk space** | Source file + temporary WAV (similar size order) + `.txt`/`.srt` + model cache (~1.5 GB for default `medium`) |
+| Enough **RAM** | 8 GB+ recommended on CPU for `medium` and long files |
+| **Model choice** | `medium` (default) — best accuracy; `small` — faster, less RAM; `tiny` — smoke/tests only |
+
+### During the run
+
+- **CPU time** scales with duration of the audio; a multi-hour MP4 can take hours on CPU — this is expected in v1 (no GPU image yet).
+- **Network** is not used for your media; only the initial model download (menu **1** / **8**) needs connectivity. See SPEC amendment 01 for setup vs transcribe egress.
+- Watch the terminal for `[transcript] extracting audio:` then `transcribe start:` — extraction failure exits before whisper runs.
+
+### Paste path workflow (menu **10**)
+
+For a file outside `./sources`, paste the **full path** (quoted if it contains spaces). The menu copies it into `./sources` and transcribes. Example sizes tested in development include ~325 MB MP4s.
+
+### If transcribe fails with “not writable”
+
+After upgrading to a non-root container, old root-owned files under `./outputs/.tmp` can block writes. Fix on the host:
+
+```bash
+chmod a+rwx outputs
+docker compose -p "$(grep COMPOSE_PROJECT_NAME .env | cut -d= -f2)" \
+  --profile dev run --rm --user root --entrypoint rm \
+  transcript -rf /outputs/.tmp
+```
+
+Or remove `./outputs/.tmp` with sufficient permissions, then retry menu **10**.
+
+---
+
 ## Full menu reference
 
 ```bash

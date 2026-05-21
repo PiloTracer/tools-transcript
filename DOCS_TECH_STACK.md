@@ -9,7 +9,7 @@
 
 | Layer | Choice | Version (pin) | Notes |
 |-------|--------|---------------|-------|
-| Transcription | whisper.cpp (ggml) | master @ build (see Dockerfile ARG) | ADR 001 |
+| Transcription | whisper.cpp (ggml) | **v1.8.4** (`WHISPER_CPP_REF` Dockerfile ARG) | ADR 001 · M1-T1 |
 | Media | ffmpeg | Ubuntu 22.04 package | Video → audio extract |
 | Container OS | Ubuntu | 22.04 | Dockerfile `FROM` |
 | Orchestration | Docker Compose | v2 plugin | ADR 002 |

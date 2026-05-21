@@ -22,8 +22,9 @@
 ### Confirmed facts (repository evidence)
 
 - Repository name / workspace: `tools-transcript`.
-- Agent OS bootstrap present: `.ai/`, `.work/`, `.cursorrules` (tokens pending full customization).
-- No application source tree yet — foundation phase only.
+- Agent OS bootstrap present: `.ai/`, `.work/`, `.cursorrules`.
+- Application tree implemented: `app/entrypoint.sh`, `bin/start.sh`, `Dockerfile`, `docker-compose.yml`, `tests/smoke.sh`, `tests/fixtures/` (foundation stack delivered; v1 hardening tracked in master plan M1).
+- Transcription SPEC + amendment: `.work/features/transcription/20260520-SPEC.md`, `20260520-SPEC-amendment-01.md`.
 
 ### Inferences (plausible, not proven)
 
