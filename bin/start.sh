@@ -589,6 +589,32 @@ cmd_transcribe() {
   dc run --rm transcript transcribe "${transcribe_args[@]}"
 }
 
+cmd_transcribe_all() {
+  local -a args=("$@")
+  local model_args=() i=0
+  require_docker
+  ensure_workspace_dirs
+  while [[ $i -lt ${#args[@]} ]]; do
+    if [[ "${args[i]}" == --model ]]; then
+      if [[ $((i + 1)) -ge ${#args[@]} ]]; then
+        printf 'missing value for --model\n' >&2
+        exit 1
+      fi
+      model_args=(--model "${args[i + 1]}")
+      i=$((i + 2))
+    else
+      printf 'unknown argument: %s (usage: %s transcribe-all [--model NAME])\n' "${args[i]}" "$0" >&2
+      exit 1
+    fi
+  done
+  if [[ ${#model_args[@]} -gt 0 ]]; then
+    cmd_ensure_model "${model_args[@]}"
+  else
+    cmd_ensure_model
+  fi
+  dc run --rm transcript transcribe-all "${model_args[@]}"
+}
+
 cmd_list_sources() {
   ensure_workspace_dirs
   local count=0 f
@@ -667,6 +693,7 @@ Stack & resources (start = validate + build + ensure-model):
 
 Transcription:
   transcribe <file>    Run job (auto-ensures model first)
+  transcribe-all       Transcribe every media file in ./sources (sequential)
   ensure-model         Download WHISPER_MODEL if missing
   ensure-model --force Re-download model (fix incomplete download)
   check-model          Verify model on volume (no download)
@@ -712,17 +739,18 @@ ${C_SEC}── Stack & resources ──${C_RESET}
 
 ${C_SEC}── Transcription ──${C_RESET}
  10)  Transcribe (type or paste path / filename)
- 11)  List ./sources
- 12)  Interactive shell
+ 11)  Transcribe all files in ./sources
+ 12)  List ./sources
+ 13)  Interactive shell
 
 ${C_SEC}── Verify & ops ──${C_RESET}
- 13)  Health check
- 14)  Run smoke test
- 15)  Usage / URLs
- 16)  Follow logs (transcript service)
+ 14)  Health check
+ 15)  Run smoke test
+ 16)  Usage / URLs
+ 17)  Follow logs (transcript service)
 
 ${C_SEC}── Danger zone ──${C_RESET}
- 17)  Nuke volumes (double confirm)
+ 18)  Nuke volumes (double confirm)
 
   0)  Exit
   r)  Refresh
@@ -790,13 +818,14 @@ dispatch_menu_choice() {
     8) menu_ensure_model_prompt ;;
     9) cmd_check_model ;;
     10) menu_transcribe_prompt ;;
-    11) cmd_list_sources ;;
-    12) cmd_shell ;;
-    13) cmd_health; rc=$? ;;
-    14) cmd_smoke; rc=$? ;;
-    15) urls_hint ;;
-    16) cmd_logs_service transcript; rc=$? ;;
-    17) cmd_nuke ;;
+    11) cmd_transcribe_all ;;
+    12) cmd_list_sources ;;
+    13) cmd_shell ;;
+    14) cmd_health; rc=$? ;;
+    15) cmd_smoke; rc=$? ;;
+    16) urls_hint ;;
+    17) cmd_logs_service transcript; rc=$? ;;
+    18) cmd_nuke ;;
     0|q|Q) return 2 ;;
     r|R) return 0 ;;
     h|H|\?) show_help; return 0 ;;
@@ -848,6 +877,7 @@ main() {
     health) cmd_health "$@" ;;
     resources) cmd_resources "$@" ;;
     transcribe) cmd_transcribe "$@" ;;
+    transcribe-all) cmd_transcribe_all "$@" ;;
     ensure-model) cmd_ensure_model "$@" ;;
     check-model) cmd_check_model "$@" ;;
     list-sources) cmd_list_sources "$@" ;;

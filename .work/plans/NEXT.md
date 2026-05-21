@@ -1,6 +1,6 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-20 (M2 committed)
+**Updated:** 2026-05-20 (M3 complete)
 
 ---
 
@@ -17,6 +17,7 @@
 | Initial git push | `main` on GitHub |
 | **M1 v1 hardening** | 2026-05-20 — commit `1d052f0`; pin v1.8.4, MP4 smoke, non-root, SPEC-amendment-01, docs |
 | **M2 CI and quality gates** | 2026-05-20 — `.github/workflows/ci.yml`, offline README, U3 closed, DOCS_TECH_STACK §4 |
+| **M3 operator UX (large files)** | 2026-05-20 — transcribe-all, size_bytes logging, 325MB checklist doc |
 
 ### M1 complete — tasks (2026-05-20)
 
@@ -41,7 +42,19 @@
 
 **Concept evidence:** `.work/plans/M2-concept-review-20260520.md` (MOD-06)
 
-**Milestone verify:** **pass with gaps** 2026-05-20 — `@code-verify milestone` (validate + smoke exit 0; GHA green unverified until push)
+**Milestone verify:** **pass with gaps** 2026-05-20 — GHA green unverified until push
+
+### M3 complete — tasks (2026-05-20)
+
+| Task | Completed | Notes |
+|------|-----------|-------|
+| M3-T1 | 2026-05-20 | `transcribe-all` host + container; menu 11 |
+| M3-T2 | 2026-05-20 | `size_bytes` on transcribe start; `duration_sec` on complete |
+| M3-T3 | 2026-05-20 | `.work/plans/operations/20260520-m3-large-mp4-checklist.md`; README link |
+
+**Concept evidence:** `.work/plans/M3-concept-review-20260520.md` (MOD-01, MOD-06)
+
+**Milestone verify:** **pass with gaps** 2026-05-20 — validate+smoke exit 0; manual 2-file batch + owner 325MB sign-off deferred (HANDOFF)
 
 ---
 
@@ -57,20 +70,21 @@
 
 | Priority | Item | Notes |
 |----------|------|-------|
-| **0** | `@code-implementation plan - M3` | Operator UX — batch transcribe, progress hints per master plan §19 |
-| **1** | `git push` | Publish M2 commit; confirm GHA green on `main` |
-| **2** | `@session-control start` | Fresh session for M3 |
+| **0** | `git push` | Publish M3 commit; confirm GHA green on `main` |
+| **1** | Owner: 325MB MP4 checklist | `.work/plans/operations/20260520-m3-large-mp4-checklist.md` → record date in HANDOFF |
+| **2** | `@code-implementation plan - M4` | GPU / performance (deferred; owner scope approval) |
+| **3** | `@session-control start` | Fresh session after push |
 
 ---
 
 ## Current iteration
 
-**M2 complete** — see Done section above. Next: `@code-implementation plan - M3`.
+**M3 complete** — see Done section above. Next: `@code-implementation plan - M4`.
 
 ---
 
-## Cross-LLM verification (M2)
+## Cross-LLM verification (M3)
 
 - **Triggered:** no
-- **Result:** skipped — CI/docs milestone; low coupling
-- **Milestone verify:** **pass with gaps** 2026-05-20 — GHA first run pending push
+- **Result:** skipped — UX-only milestone
+- **Milestone verify:** **pass with gaps** 2026-05-20 — `@code-verify milestone`; `@code-implementation complete`

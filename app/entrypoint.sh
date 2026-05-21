@@ -41,6 +41,7 @@ usage() {
   cat >&2 <<'EOF'
 Usage:
   entrypoint.sh transcribe <file-in-sources> [--model NAME]
+  entrypoint.sh transcribe-all [--model NAME]
   entrypoint.sh ensure-model [--model NAME] [--force]
   entrypoint.sh check-model [--model NAME]
   entrypoint.sh shell
@@ -237,6 +238,18 @@ is_video() {
   esac
 }
 
+is_source_media() {
+  case "${1##*.}" in
+    mp4|mkv|webm|mov|avi|m4v|flv|wmv) return 0 ;;
+    wav|mp3|m4a|flac|ogg|opus|aac|wma) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+source_file_size() {
+  model_file_size "$1"
+}
+
 prepare_audio() {
   local source="$1"
   local base
@@ -258,11 +271,70 @@ prepare_audio() {
   fi
 }
 
+do_transcribe_file() {
+  local rel="$1"
+  local model_override="${2:-}"
+  local source audio model_path_out base size_bytes
+  local start_ts end_ts duration
+
+  rel="$(normalize_source_rel "$rel")"
+  source="$(resolve_source "$rel")"
+  base="$(basename "$rel")"
+  base="${base%.*}"
+
+  ensure_model "$model_override"
+  model_path_out="$(model_path "$model_override")"
+  audio="$(prepare_audio "$source")"
+
+  ensure_outputs_dirs
+  size_bytes="$(source_file_size "$source")"
+  log "transcribe start: ${base} model=$(model_name "$model_override") size_bytes=${size_bytes}"
+
+  start_ts=$(date +%s)
+  if ! "$WHISPER_BIN" \
+      -m "$model_path_out" \
+      -f "$audio" \
+      -of "${OUTPUTS_DIR}/${base}" \
+      -otxt -osrt; then
+    printf 'transcription failed: %s\n' "$(basename "$rel")" >&2
+    if ! model_is_valid "$(model_name "$model_override")"; then
+      printf 'hint: model file may be corrupt — run: %s ensure-model --force\n' \
+        "entrypoint.sh" >&2
+    fi
+    return 2
+  fi
+  end_ts=$(date +%s)
+  duration=$((end_ts - start_ts))
+
+  log "transcribe complete: ${base} duration_sec=${duration} exit_code=0"
+  return 0
+}
+
+parse_transcribe_model_arg() {
+  local -n _override="$1"
+  shift
+  _override=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --model)
+        shift
+        _override="${1:-}"
+        [[ -n "$_override" ]] || usage
+        ;;
+      *)
+        printf 'unknown option: %s\n' "$1" >&2
+        exit 1
+        ;;
+    esac
+    shift || true
+  done
+}
+
 cmd_transcribe() {
   local rel="${1:-}"
   shift || true
   local model_override=""
-  local start_ts end_ts duration
 
   if [[ -z "$rel" ]]; then
     usage
@@ -287,36 +359,61 @@ cmd_transcribe() {
     shift || true
   done
 
-  local source audio model_path_out base
-  rel="$(normalize_source_rel "$rel")"
-  source="$(resolve_source "$rel")"
-  base="$(basename "$rel")"
-  base="${base%.*}"
+  do_transcribe_file "$rel" "$model_override"
+}
+
+collect_source_media_files() {
+  local -n _out="$1"
+  _out=()
+  local f rel
+  shopt -s nullglob
+  for f in "${SOURCES_DIR}"/*; do
+    [[ -f "$f" ]] || continue
+    rel="$(basename "$f")"
+    if [[ "$rel" == .* ]]; then
+      continue
+    fi
+    if is_source_media "$rel"; then
+      _out+=("$rel")
+    else
+      log "skipping non-media: ${rel}"
+    fi
+  done
+  shopt -u nullglob
+  if [[ ${#_out[@]} -gt 0 ]]; then
+    local -a sorted=()
+    mapfile -t sorted < <(printf '%s\n' "${_out[@]}" | LC_ALL=C sort)
+    _out=("${sorted[@]}")
+  fi
+}
+
+cmd_transcribe_all() {
+  local model_override=""
+  parse_transcribe_model_arg model_override "$@"
+
+  local -a queue=()
+  collect_source_media_files queue
+
+  if [[ ${#queue[@]} -eq 0 ]]; then
+    printf 'no media files found in ./sources\n' >&2
+    exit 1
+  fi
 
   ensure_model "$model_override"
-  model_path_out="$(model_path "$model_override")"
-  audio="$(prepare_audio "$source")"
 
-  ensure_outputs_dirs
-  log "transcribe start: ${base} model=$(model_name "$model_override")"
-
-  start_ts=$(date +%s)
-  if ! "$WHISPER_BIN" \
-      -m "$model_path_out" \
-      -f "$audio" \
-      -of "${OUTPUTS_DIR}/${base}" \
-      -otxt -osrt; then
-    printf 'transcription failed\n' >&2
-    if ! model_is_valid "$(model_name "$model_override")"; then
-      printf 'hint: model file may be corrupt — run: %s ensure-model --force\n' \
-        "entrypoint.sh" >&2
+  local failed=0 rel
+  log "transcribe-all start: count=${#queue[@]} model=$(model_name "$model_override")"
+  for rel in "${queue[@]}"; do
+    if ! do_transcribe_file "$rel" "$model_override"; then
+      failed=1
     fi
-    exit 2
-  fi
-  end_ts=$(date +%s)
-  duration=$((end_ts - start_ts))
+  done
 
-  log "transcribe complete: ${base} duration_sec=${duration} exit_code=0"
+  if [[ "$failed" -eq 1 ]]; then
+    log "transcribe-all complete: exit_code=1 (one or more failures)"
+    exit 1
+  fi
+  log "transcribe-all complete: exit_code=0 count=${#queue[@]}"
 }
 
 cmd_shell() {
@@ -329,6 +426,7 @@ main() {
 
   case "$cmd" in
     transcribe) cmd_transcribe "$@" ;;
+    transcribe-all) cmd_transcribe_all "$@" ;;
     ensure-model) cmd_ensure_model "$@" ;;
     check-model) cmd_check_model "$@" ;;
     shell) cmd_shell ;;

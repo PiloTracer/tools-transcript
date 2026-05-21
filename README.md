@@ -129,6 +129,19 @@ You do **not** need a separate “extract audio” step. The container runs **ff
 
 For a file outside `./sources`, paste the **full path** (quoted if it contains spaces). The menu copies it into `./sources` and transcribes. Example sizes tested in development include ~325 MB MP4s.
 
+### Batch transcribe (all files in `./sources`)
+
+```bash
+./bin/start.sh transcribe-all
+# or menu 11
+```
+
+Processes every supported audio/video file in `./sources` **one after another**. Non-media files are skipped. If any file fails, the command exits non-zero after attempting the rest.
+
+Logs include `size_bytes` at start and `duration_sec` on complete (no transcript text in logs).
+
+**Owner sign-off for large MP4:** [`.work/plans/operations/20260520-m3-large-mp4-checklist.md`](.work/plans/operations/20260520-m3-large-mp4-checklist.md) — run once and record the date in HANDOFF.
+
 ### If transcribe fails with “not writable”
 
 After upgrading to a non-root container, old root-owned files under `./outputs/.tmp` can block writes. Fix on the host:

@@ -2,13 +2,13 @@
 
 ## Session status
 
-**Closed:** 2026-05-20 — M2 CI complete; committed GitHub Actions, offline docs, U3 closed
+**Closed:** 2026-05-20 — M3 operator UX committed (`transcribe-all`, progress logs, checklist)
 
 **Updated:** 2026-05-20
 
 **Open:** —
 
-**Repository state:** M1 **complete** (`1d052f0`). M2 **complete** (committed this session). Master plan **Approved**. Next: **M3 operator UX** — `@code-implementation plan - M3`. Push `main` + confirm GHA green to close M2 acceptance gap.
+**Repository state:** M1 **complete** (`1d052f0`). M2 **complete** (`980646c`). M3 **complete** (committed this close). Master plan **Approved**. Next: owner 325MB sign-off → `@code-implementation plan - M4` (GPU; owner approval) → `git push` + GHA green.
 
 **Plan-master-ready:** 2026-05-20
 
@@ -23,7 +23,7 @@
 1. Run **`@session-control start`**
 2. Read **`.cursorrules`**
 3. Read this file and `.work/plans/NEXT.md`
-4. Run **`@code-implementation plan - M3`**
+4. Owner: [325MB MP4 checklist](.work/plans/operations/20260520-m3-large-mp4-checklist.md) — then **`@code-implementation plan - M4`** if GPU scope approved
 
 ---
 
@@ -44,7 +44,16 @@
 
 | # | Action | Blocks | Owner |
 |---|--------|--------|-------|
-| - | (none) | | |
+| 1 | Complete [325MB MP4 checklist](.work/plans/operations/20260520-m3-large-mp4-checklist.md); record date below | v1 product sign-off (G1) | owner |
+| 2 | Optional: run `./bin/start.sh transcribe-all --model tiny` with only 2 small files in `./sources` | M3 acceptance gap (waived at complete) | owner |
+
+## M3 acceptance gaps (waived at complete 2026-05-20)
+
+| Gap | Waiver | Owner |
+|-----|--------|-------|
+| Manual `transcribe-all` on 2+ fixtures not run in agent session | Code-reviewed; single-file smoke PASS; batch mirrors `transcribe` loop | optional owner retest |
+| 325MB MP4 checklist date not in HANDOFF | Checklist doc delivered (M3-T3); sign-off date is owner-run | owner |
+| GHA green after M3 push | Same as M2 pattern — verify on push | owner |
 
 ---
 
@@ -61,6 +70,9 @@
 | 2026-05-20 | M2 implementation | `.github/workflows/ci.yml`, README offline/air-gapped, DOCS_TECH_STACK §4, U3 closed |
 | 2026-05-20 | M2 complete | `@code-verify milestone` pass with gaps; `M2-concept-review-20260520.md` |
 | 2026-05-20 | M2 close commit | `@session-control close commit` — M2 published |
+| 2026-05-20 | M3 implementation | `transcribe-all`, `size_bytes` logs, menu 11, operations checklist |
+| 2026-05-20 | M3 complete | `@code-verify milestone` pass with gaps; `M3-concept-review-20260520.md` |
+| 2026-05-20 | M3 close commit | `@session-control close commit` — M3 published locally |
 
 ---
 
@@ -88,4 +100,4 @@
 
 - **Triggered:** no
 - **Result:** n/a
-- **Notes:** MOD-06 — `.work/plans/M2-concept-review-20260520.md`
+- **Notes:** MOD-06 — `.work/plans/M3-concept-review-20260520.md` (M3); M2 — `M2-concept-review-20260520.md`
