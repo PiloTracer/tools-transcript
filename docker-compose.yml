@@ -1,0 +1,35 @@
+# tools-transcript — isolated local dev stack
+# Isolation: always use COMPOSE_PROJECT_NAME + repo-root project-directory.
+
+name: tools-transcript
+
+services:
+  transcript:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tools-transcript:${STACK_SUFFIX:-dev}
+    container_name: transcript-${STACK_SUFFIX:-dev}
+    profiles:
+      - dev
+    environment:
+      WHISPER_MODEL: ${WHISPER_MODEL:-medium}
+    volumes:
+      - ./sources:/sources:ro
+      - ./outputs:/outputs
+      - whisper-models:/opt/whisper.cpp/models
+    # v1: CLI via `compose run` — no published ports.
+    # Future HTTP: uncomment and set TRANSCRIPT_HOST_PORT=0 for ephemeral host port.
+    # ports:
+    #   - "${TRANSCRIPT_HOST_PORT:-}:8080"
+    init: true
+    stdin_open: true
+    tty: true
+
+volumes:
+  whisper-models:
+    name: tools-transcript-models-${STACK_SUFFIX:-dev}
+
+networks:
+  default:
+    name: tools-transcript-net-${STACK_SUFFIX:-dev}
