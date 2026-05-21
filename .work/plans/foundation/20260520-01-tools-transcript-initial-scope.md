@@ -30,15 +30,15 @@
 
 - Primary user is a developer or power user on Linux (Pop!_OS / Ubuntu) transcribing owned media locally.
 - v1 does not require a web UI, API server, database, or multi-tenant hosting.
-- CPU-only transcription is acceptable for v1; GPU acceleration is a later optimization (see UNKNOWNS).
+- CPU-only transcription is the default v1 path; optional GPU acceleration ships as a separate Compose profile (M4, ADR 005).
 
 ### Unknowns (decide with stakeholders)
 
 | # | Unknown | Impact |
 |---|---------|--------|
-| 1 | Default Whisper model pin at first run (`small` vs `medium`) | Image size, first-run time, accuracy |
-| 2 | GPU / CUDA support in Docker | Build complexity, performance |
-| 3 | Whether to ship a thin Python wrapper vs shell-only CLI | Testability, dependency surface |
+| 1 | Default Whisper model pin at first run (`small` vs `medium`) | **Resolved** — `medium` default (ADR 004) |
+| 2 | GPU / CUDA support in Docker | **Resolved** — `Dockerfile.cuda`, profile `gpu`, service `transcript-gpu` (M4) |
+| 3 | Whether to ship a thin Python wrapper vs shell-only CLI | Open — shell-only CLI shipped |
 
 ---
 

@@ -1,6 +1,6 @@
 # NEXT - planning backlog
 
-**Updated:** 2026-05-20 (M4 complete)
+**Updated:** 2026-05-20 (session close — doc sync committed)
 
 ---
 
@@ -83,7 +83,7 @@
 
 | Priority | Item | Notes |
 |----------|------|-------|
-| **0** | `@session-control close commit` | Publish M4 (uncommitted); confirm GHA green |
+| **0** | `git push` + confirm GHA green | M4 committed locally (`b8f60fe`); branch ahead of `origin/main` |
 | **1** | Owner: 325MB MP4 checklist | `.work/plans/operations/20260520-m3-large-mp4-checklist.md` |
 | **2** | Owner: manual GPU transcribe | README § GPU on NVIDIA host; record in HANDOFF |
 | **3** | `@plan-master revise` | Only if post-M4 scope changes (all plan milestones done) |

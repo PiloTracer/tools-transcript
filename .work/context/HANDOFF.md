@@ -2,13 +2,13 @@
 
 ## Session status
 
-**Closed:** 2026-05-20 — M4 GPU (ADR 005, Dockerfile.cuda, compose profile gpu, docs)
+**Closed:** 2026-05-20 — full scan PASS; README menu sync; plan/ADR doc alignment; close commit
 
 **Updated:** 2026-05-20
 
 **Open:** —
 
-**Repository state:** M1–M4 **complete** (committed this close). Master plan **Approved** — all milestones implemented. Next: `git push` + GHA green; owner 325MB checklist + optional GPU manual verify.
+**Repository state:** M1–M4 **complete**. All milestones implemented; master plan **Approved**. Local `main` ahead of `origin/main` (M4 GPU + doc sync commits). Verification: `validate` + `tests/smoke.sh` exit 0 (2026-05-20). Next: `git push` + GHA green; owner 325MB checklist + optional GPU manual verify.
 
 **Plan-master-ready:** 2026-05-20
 
@@ -84,6 +84,8 @@
 | 2026-05-20 | M3 close commit | `@session-control close commit` — M3 published locally |
 | 2026-05-20 | M4 implementation | ADR 005, `Dockerfile.cuda`, compose profile `gpu`, README GPU |
 | 2026-05-20 | M4 complete | `@code-verify milestone` pass with gaps; `M4-concept-review-20260520.md` |
+| 2026-05-20 | Full scan session | validate+smoke PASS; README menu numbers fixed; NEXT/full-plan/foundation/ADR 005 doc sync |
+| 2026-05-20 | Session close commit | `@session-control close commit` — README + plan docs published locally |
 
 ---
 

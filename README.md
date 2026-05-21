@@ -96,7 +96,8 @@ Press **`r`** to refresh after a long download or build.
 |------|------|
 | Check if you can transcribe | **4** Status (or read the readiness banner) |
 | Transcribe a file | **10** |
-| See files in `./sources` | **11** |
+| Transcribe all files in `./sources` | **11** |
+| See files in `./sources` | **12** |
 | Re-download / fix model | **8** (or **9** to verify only) |
 | Stop compose project | **2** |
 
@@ -237,23 +238,24 @@ Or remove `./outputs/.tmp` with sufficient permissions, then retry menu **10**.
 | # | Action |
 |---|--------|
 | **10** | **Transcribe** — paste path or filename; optional model override |
-| **11** | List files in `./sources` |
-| **12** | Shell inside the transcript container |
+| **11** | **Transcribe all** — every supported file in `./sources` (sequential) |
+| **12** | List files in `./sources` |
+| **13** | Shell inside the transcript container |
 
 ### Verify & ops
 
 | # | Action |
 |---|--------|
-| **13** | Health check |
-| **14** | Run smoke test (`tests/smoke.sh`) |
-| **15** | Usage / URLs |
-| **16** | Follow service logs |
+| **14** | Health check |
+| **15** | Run smoke test (`tests/smoke.sh`) |
+| **16** | Usage / URLs |
+| **17** | Follow service logs |
 
 ### Danger zone
 
 | # | Action |
 |---|--------|
-| **17** | Nuke — deletes project volumes including downloaded models (double confirm) |
+| **18** | Nuke — deletes project volumes including downloaded models (double confirm) |
 
 ---
 
@@ -261,7 +263,7 @@ Or remove `./outputs/.tmp` with sufficient permissions, then retry menu **10**.
 
 | Location | Purpose |
 |----------|---------|
-| `./sources/` | Input media (menu **11** lists them; menu **10** can copy from elsewhere) |
+| `./sources/` | Input media (menu **12** lists them; menu **10** can copy from elsewhere) |
 | `./outputs/` | Transcripts: `<name>.txt`, `<name>.srt` |
 | Docker volume `tools-transcript-models-<suffix>` | Cached Whisper models (survives menu **2** Stop) |
 | `.env` | Isolation + default model — copy from `.env.example` |
@@ -331,7 +333,7 @@ Transcription of files already in `./sources` does **not** use the network. You 
 | Phase | Needs network? | Commands |
 |-------|----------------|----------|
 | **Prepare** | Yes (or copy artifacts from another machine) | Menu **1** / **6** + **8**, or `./bin/start.sh start` |
-| **Transcribe** | No | Menu **10** or `./bin/start.sh transcribe <file>` |
+| **Transcribe** | No | Menu **10** / **11** or `./bin/start.sh transcribe` / `transcribe-all` |
 
 After prepare, menu **4** should show **READY TO TRANSCRIBE**. From then on, jobs only read `./sources` and write `./outputs` — no cloud upload.
 
@@ -414,6 +416,7 @@ Same **Linux** host and Docker requirements as the menu. For scripts or automati
 ./bin/start.sh start
 ./bin/start.sh status
 ./bin/start.sh transcribe "/path/to/video.mp4"
+./bin/start.sh transcribe-all
 ./bin/start.sh list-sources
 ./bin/start.sh ensure-model
 ./bin/start.sh check-model
